@@ -54,19 +54,27 @@ func main() {
 			"pokemon": pokemon.Name,
 		})
 	})
-	r.GET("/pokemon/:name", getPokemon)
+	r.POST("/pokemon", getPokemon)
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
 
 func getPokemon(c *gin.Context) {
-	pokemonName := c.Param("name")
-	pokemon, _ := pokeapi.Pokemon(pokemonName)
+	pokemonName := c.PostForm("pokemonName")
 
-	if pokemon.Name == "" {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "The Pokemon requested was not found.",
-		})
-		return
+if pokemonName == "" {
+	c.JSON(http.StatusBadRequest, gin.H{
+		"message": "The requested Pokemon was not found",
+	})
+	return
+}
+	pokemonResponse, _ := pokeapi.Pokemon(pokemonName)
+
+	pokemon := Pokemon{
+		Name: pokemonResponse.Name,
+		Image: pokemonResponse.Sprites.FrontDefault,
+
 	}
-	c.JSON(http.StatusOK, pokemon)
+
+	tmpl := template.Must(template.ParseFiles("./index.html"))
+	tmpl.ExecuteTemplate(c.Writer, "pokemon-card", pokemon)
 }
