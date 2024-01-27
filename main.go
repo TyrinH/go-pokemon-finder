@@ -2,7 +2,9 @@ package main
 
 import (
 	"html/template"
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -12,6 +14,11 @@ import (
 type Pokemon struct {
 	Name string
 	Image string
+	Id int
+}
+
+type ErrorMessage struct {
+	Message string
 }
 
 func main() {
@@ -68,10 +75,28 @@ if pokemonName == "" {
 	return
 }
 	pokemonResponse, _ := pokeapi.Pokemon(pokemonName)
+	pokemonIdString := strconv.Itoa(pokemonResponse.ID)
+	log.Print("Pokemon Types:", pokemonResponse.Types)
+	pokemonFormsResponse, _ := pokeapi.EvolutionChain(pokemonIdString)   
 
+	log.Print(pokemonFormsResponse)
+
+	if pokemonResponse.Name == "" {
+		// log.Fatal("Pokemon was not found")
+		errorMessage := ErrorMessage {
+			Message: "Pokemon was not found",
+		}
+		tmpl := template.Must(template.ParseFiles("./index.html"))
+		tmpl.ExecuteTemplate(c.Writer,"error-toast", errorMessage)
+
+		return
+
+	}
+           
 	pokemon := Pokemon{
 		Name: pokemonResponse.Name,
 		Image: pokemonResponse.Sprites.FrontDefault,
+		Id: pokemonResponse.ID,
 
 	}
 

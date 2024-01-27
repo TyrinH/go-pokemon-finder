@@ -13,23 +13,38 @@
         Pokemon Finder
     </h1>
 
-    {{ range .Pokemons }}
-      {{ block "pokemon-card" . }}
-        <div class="card" style="width: 10rem;">
-            <img src={{ .Image }} class="card-img-top" alt="...">
-            <div class="card-body">
-              <p class="card-text">{{ .Name }}</p>
-            </div>
+    <div class="container-lg row row-cols-1 row-cols-md-3 g-4" id="pokemon-list">
+        {{ range .Pokemons }}
+        {{ block "pokemon-card" . }}
+        <div class="card col text-white bg-dark mb-3 mx-3" style="width: 10rem;">
+          <img src={{ .Image }} class="card-img-top" alt="...">
+          <div class="card-body">
+            <p class="card-text">{{ .Name }}</p>
           </div>
-      {{ end }}
-    {{ end }}
+        </div>
+        {{ end }}
+        {{ end }}
+    </div>
 
-    <form hx-post="/pokemon">
+    <form hx-post="/pokemon" hx-swap="beforeend" hx-target="#pokemon-list" hx-on::after-request="if(event.detail.successful) this.reset()" hx-indicator="#indicator">
       <div class="mb-3">
         <label for="pokemonSearch" class="form-label">Search Pokemon</label>
         <input type="text" class="form-control" id="pokemonSearch" name="pokemonName">
       </div>
       <button type="submit" class="btn btn-primary">Submit</button>
     </form>
+
+    <div class="spinner-border htmx-indicator" role="status" id="indicator">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+
+    {{ block "error-toast" .}}
+    {{ if .Message }}
+    <div class="alert alert-danger" role="alert" id="#pokemon-list">
+      {{ .Message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {{ end }}
+    {{ end }}
 </body>
 </html>
