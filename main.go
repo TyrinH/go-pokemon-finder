@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"html/template"
+	"log"
 	"net/http"
 	"strings"
 
@@ -19,40 +21,40 @@ type Pokemon struct {
 }
 
 type ErrorMessage struct {
-	Message string
+	Message error
 }
 
 func main() {
 	r := gin.Default()
 	r.GET("/", func (c *gin.Context)  {
 		tmpl := template.Must(template.ParseFiles("./index.html"))
-		bulbasaurResponse, _ := pokeapi.Pokemon("bulbasaur")
-		charmanderResponse, _ := pokeapi.Pokemon("charmander")
-		squirtleResponse, _ := pokeapi.Pokemon("squirtle")
+		bulbasaur,bulbasaurErr := createPokemon("bulbasaur")
+		charmander, charmanderErr := createPokemon("charmander")
+		squirtle, squirtleErr := createPokemon("squirtle")
 
-		bulbasaur := Pokemon{
-			Name: bulbasaurResponse.Name,
-			Image: bulbasaurResponse.Sprites.FrontDefault,
+		if bulbasaurErr != nil {
+			errorMessage := ErrorMessage{
+				Message: bulbasaurErr,
+			}
+			tmpl := template.Must(template.ParseFiles("./index.html"))
+			tmpl.ExecuteTemplate(c.Writer,"error-toast", errorMessage)
+			return
 		}
-		for i := 0; i < len(bulbasaurResponse.Types); i++ {
-			bulbasaur.Types = append(bulbasaur.Types, bulbasaurResponse.Types[i].Type.Name)
+		if charmanderErr != nil {
+			errorMessage := ErrorMessage{
+				Message: charmanderErr,
+			}
+			tmpl := template.Must(template.ParseFiles("./index.html"))
+			tmpl.ExecuteTemplate(c.Writer,"error-toast", errorMessage)
+			return
 		}
-		charmander := Pokemon{
-			Name: charmanderResponse.Name,
-			Image: charmanderResponse.Sprites.FrontDefault,
-		}
-		for i := 0; i < len(charmanderResponse.Types); i++ {
-			charmander.Types = append(charmander.Types, charmanderResponse.Types[i].Type.Name)
-		}
-		squirtle := Pokemon{
-			Name: squirtleResponse.Name,
-			Image: squirtleResponse.Sprites.FrontDefault,
-		}
-		for i := 0; i < len(squirtleResponse.Types); i++ {
-			squirtle.Types = append(squirtle.Types, squirtleResponse.Types[i].Type.Name)
-		}
-		for i := 0; i < len(squirtleResponse.Abilities); i++ {
-			squirtle.Abilities = append(squirtle.Abilities, squirtleResponse.Abilities[i].Ability.Name)
+		if squirtleErr != nil {
+			errorMessage := ErrorMessage{
+				Message: squirtleErr,
+			}
+			tmpl := template.Must(template.ParseFiles("./index.html"))
+			tmpl.ExecuteTemplate(c.Writer,"error-toast", errorMessage)
+			return
 		}
 
 		starterPokemon := map[string][]Pokemon{
@@ -60,16 +62,13 @@ func main() {
 				bulbasaur,
 				charmander,
 				squirtle,
-				
 			},
 		}
 		tmpl.Execute(c.Writer, starterPokemon)
 	})
 	r.GET("/ping", func(c *gin.Context)  {
-		pokemon, _ := pokeapi.Pokemon("pikachu")
 		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-			"pokemon": pokemon.Name,
+			"message": "Everything is up and running!",
 		})
 	})
 	r.POST("/pokemon", getPokemon)
@@ -78,24 +77,30 @@ func main() {
 
 func getPokemon(c *gin.Context) {
 	pokemonName := c.PostForm("pokemonName")
+	pokemon, err := createPokemon(pokemonName)
 
-if pokemonName == "" {
-	c.JSON(http.StatusBadRequest, gin.H{
-		"message": "The requested Pokemon was not found",
-	})
-	return
-}
-	pokemonResponse, _ := pokeapi.Pokemon(strings.ToLower(pokemonName))
-
-	if pokemonResponse.Name == "" {
-		errorMessage := ErrorMessage {
-			Message: "Pokemon was not found",
-		}
-		tmpl := template.Must(template.ParseFiles("./index.html"))
-		tmpl.ExecuteTemplate(c.Writer,"error-toast", errorMessage)
-		return
+if err != nil {
+	log.Print(err)
+	errorMessage := ErrorMessage{
+		Message: err,
 	}
-           
+	tmpl := template.Must(template.ParseFiles("./index.html"))
+	tmpl.ExecuteTemplate(c.Writer,"error-toast", errorMessage)
+	return
+}	
+	tmpl := template.Must(template.ParseFiles("./index.html"))
+	tmpl.ExecuteTemplate(c.Writer, "pokemon-card", pokemon)
+}
+
+func createPokemon (pokemonName string) (Pokemon, error) {
+
+	if pokemonName == "" {
+		return Pokemon{}, errors.New("empty Pokemon Name received")
+	}
+	pokemonResponse, _ := pokeapi.Pokemon(strings.ToLower(pokemonName))
+	if pokemonResponse.Name == "" {
+		return Pokemon{}, errors.New("pokemon was not found")
+	}
 	pokemon := Pokemon{
 		Name: pokemonResponse.Name,
 		Image: pokemonResponse.Sprites.FrontDefault,
@@ -109,6 +114,6 @@ if pokemonName == "" {
 	for i := 0; i < len(pokemonResponse.Abilities); i++ {
 		pokemon.Abilities = append(pokemon.Abilities, pokemonResponse.Abilities[i].Ability.Name)
 	}
-	tmpl := template.Must(template.ParseFiles("./index.html"))
-	tmpl.ExecuteTemplate(c.Writer, "pokemon-card", pokemon)
+
+	return pokemon, nil
 }
