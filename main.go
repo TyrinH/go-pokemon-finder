@@ -2,8 +2,8 @@ package main
 
 import (
 	"html/template"
-	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -15,6 +15,7 @@ type Pokemon struct {
 	Image string
 	Id int
 	Types []string
+	Abilities []string
 }
 
 type ErrorMessage struct {
@@ -50,6 +51,9 @@ func main() {
 		for i := 0; i < len(squirtleResponse.Types); i++ {
 			squirtle.Types = append(squirtle.Types, squirtleResponse.Types[i].Type.Name)
 		}
+		for i := 0; i < len(squirtleResponse.Abilities); i++ {
+			squirtle.Abilities = append(squirtle.Abilities, squirtleResponse.Abilities[i].Ability.Name)
+		}
 
 		starterPokemon := map[string][]Pokemon{
 			"Pokemons": {
@@ -81,11 +85,7 @@ if pokemonName == "" {
 	})
 	return
 }
-	pokemonResponse, _ := pokeapi.Pokemon(pokemonName)
-	// pokemonIdString := strconv.Itoa(pokemonResponse.ID)
-	pokemonFormsResponse, _ := pokeapi.EvolutionChain("19")   
-
-	log.Print("pokemon evolves to:", pokemonFormsResponse.Chain.Species.Name)
+	pokemonResponse, _ := pokeapi.Pokemon(strings.ToLower(pokemonName))
 
 	if pokemonResponse.Name == "" {
 		errorMessage := ErrorMessage {
@@ -101,10 +101,14 @@ if pokemonName == "" {
 		Image: pokemonResponse.Sprites.FrontDefault,
 		Id: pokemonResponse.ID,
 	}
+
 	for i := 0; i < len(pokemonResponse.Types); i++ {
 		pokemon.Types = append(pokemon.Types, pokemonResponse.Types[i].Type.Name)
 	}
 
+	for i := 0; i < len(pokemonResponse.Abilities); i++ {
+		pokemon.Abilities = append(pokemon.Abilities, pokemonResponse.Abilities[i].Ability.Name)
+	}
 	tmpl := template.Must(template.ParseFiles("./index.html"))
 	tmpl.ExecuteTemplate(c.Writer, "pokemon-card", pokemon)
 }

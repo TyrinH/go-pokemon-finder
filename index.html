@@ -17,13 +17,22 @@
     <div class="container-lg row row-cols-1 row-cols-md-3 g-4" id="pokemon-list">
         {{ range .Pokemons }}
         {{ block "pokemon-card" . }}
-        <div class="card col text-white bg-dark mb-3 mx-3" style="width: 10rem;">
+        <div class="card col text-white bg-dark mb-3 mx-3" style="width: 14rem;">
           <img src={{ .Image }} class="card-img-top" alt="...">
           <div class="card-body">
-            <p class="card-text">{{ .Name }}</p>
+            <p class="card-title">{{ .Name }}</p>
             {{ if .Types }}
+            <p class="card-title">Types</p>
             <p class="card-text">
                 {{ range .Types }}
+                <span class="badge bg-secondary">{{ . }}</span>
+                {{ end }}
+            </p>
+            {{ end }}
+            {{ if .Abilities }}
+            <p class="card-title">Abilities</p>
+            <p class="card-text">
+                {{ range .Abilities }}
                 <span class="badge bg-secondary">{{ . }}</span>
                 {{ end }}
             </p>
