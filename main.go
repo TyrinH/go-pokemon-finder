@@ -4,7 +4,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -15,6 +14,7 @@ type Pokemon struct {
 	Name string
 	Image string
 	Id int
+	Types []string
 }
 
 type ErrorMessage struct {
@@ -33,15 +33,22 @@ func main() {
 			Name: bulbasaurResponse.Name,
 			Image: bulbasaurResponse.Sprites.FrontDefault,
 		}
+		for i := 0; i < len(bulbasaurResponse.Types); i++ {
+			bulbasaur.Types = append(bulbasaur.Types, bulbasaurResponse.Types[i].Type.Name)
+		}
 		charmander := Pokemon{
 			Name: charmanderResponse.Name,
 			Image: charmanderResponse.Sprites.FrontDefault,
-
+		}
+		for i := 0; i < len(charmanderResponse.Types); i++ {
+			charmander.Types = append(charmander.Types, charmanderResponse.Types[i].Type.Name)
 		}
 		squirtle := Pokemon{
 			Name: squirtleResponse.Name,
 			Image: squirtleResponse.Sprites.FrontDefault,
-
+		}
+		for i := 0; i < len(squirtleResponse.Types); i++ {
+			squirtle.Types = append(squirtle.Types, squirtleResponse.Types[i].Type.Name)
 		}
 
 		starterPokemon := map[string][]Pokemon{
@@ -75,29 +82,27 @@ if pokemonName == "" {
 	return
 }
 	pokemonResponse, _ := pokeapi.Pokemon(pokemonName)
-	pokemonIdString := strconv.Itoa(pokemonResponse.ID)
-	log.Print("Pokemon Types:", pokemonResponse.Types)
-	pokemonFormsResponse, _ := pokeapi.EvolutionChain(pokemonIdString)   
+	// pokemonIdString := strconv.Itoa(pokemonResponse.ID)
+	pokemonFormsResponse, _ := pokeapi.EvolutionChain("19")   
 
-	log.Print(pokemonFormsResponse)
+	log.Print("pokemon evolves to:", pokemonFormsResponse.Chain.Species.Name)
 
 	if pokemonResponse.Name == "" {
-		// log.Fatal("Pokemon was not found")
 		errorMessage := ErrorMessage {
 			Message: "Pokemon was not found",
 		}
 		tmpl := template.Must(template.ParseFiles("./index.html"))
 		tmpl.ExecuteTemplate(c.Writer,"error-toast", errorMessage)
-
 		return
-
 	}
            
 	pokemon := Pokemon{
 		Name: pokemonResponse.Name,
 		Image: pokemonResponse.Sprites.FrontDefault,
 		Id: pokemonResponse.ID,
-
+	}
+	for i := 0; i < len(pokemonResponse.Types); i++ {
+		pokemon.Types = append(pokemon.Types, pokemonResponse.Types[i].Type.Name)
 	}
 
 	tmpl := template.Must(template.ParseFiles("./index.html"))
